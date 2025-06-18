@@ -7,6 +7,8 @@ def get_files_info(working_directory, directory=None):
     if is_outside_working_directory(working_directory, directory):
         return (f'Error: Cannot list "{directory}" as it is outside the permitted working directory')
     
+
+
 #####
     try:
         # Get the list of all files and directories in the specified path
