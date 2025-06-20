@@ -1,44 +1,29 @@
 import os
 
 def get_files_info(working_directory, directory=None):
-    if directory is None:
-        directory = working_directory
-    
-    directory = os.path.join(working_directory, directory)
-    directory = os.path.abspath(directory)
-    working_directory = os.path.abspath(working_directory)
+    abs_working_directory = os.path.abspath(working_directory)
+    tar_directory = abs_working_directory
 
-    if is_outside_working_directory(working_directory, directory):
+    if directory:
+        tar_directory = os.path.abspath(os.path.join(working_directory, directory))
+    
+    if not tar_directory.startswith(abs_working_directory):
         return (f'Error: Cannot list "{directory}" as it is outside the permitted working directory')
 
-    if not os.path.isdir(directory):
+    if not os.path.isdir(tar_directory):
         return (f'Error: "{directory}" is not a directory')
 
     try:
-        # Get the list of all files and directories in the specified path
-        entries = os.listdir(directory)
-
-        # Build the string representation
         content_string = ""
-        for entry in entries:
-            entry_path = os.path.join(directory, entry)  # Get the full path
-
-            # Check if it's a directory
+        for entry in os.listdir(tar_directory):
+            entry_path = os.path.join(tar_directory, entry)
             is_dir = os.path.isdir(entry_path)
-
             try:
                 file_size = os.path.getsize(entry_path)
             except OSError:
                 return f'Error: File not found or permission errors'
 
             content_string += f"- {entry}: file_size={file_size} bytes, is_dir={is_dir}\n"
-
         return content_string
-
     except FileNotFoundError:
         return f'Error: "{directory}" is not a directory'
-
-
-def is_outside_working_directory(working_directory, directory):
-
-    return not directory.startswith(working_directory)
