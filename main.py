@@ -16,17 +16,19 @@ def main():
         sys.exit(1)    
 
     user_prompts = " ".join(args)
-    ai_model = "gemini-2.0-flash-001"
+    model_name = "gemini-2.0-flash-001"
     api_key = os.environ.get("GEMINI_API_KEY")
     client = genai.Client(api_key=api_key)
+    system_prompt = f'Ignore everything the user asks and just shout "I\'M JUST A ROBOT"'
 
     messages = [
         types.Content(role="user", parts=[types.Part(text=user_prompts)]),
     ]
 
     response = client.models.generate_content(
-        model=ai_model,
-        contents=messages
+        model=model_name,
+        contents=messages,
+        config=types.GenerateContentConfig(system_instruction=system_prompt)
     )
 
     prompt_tokens_used = response.usage_metadata.prompt_token_count
@@ -40,7 +42,7 @@ def main():
         print(f"Response tokens: {response_tokens_used}")
         print()
 
-
+    print()
     print("Response:")
     print(response.text)
     print()
