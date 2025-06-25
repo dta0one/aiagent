@@ -24,7 +24,8 @@ def main():
         sys.exit(1)    
 
     # Variables and Prompts
-    user_prompts = " ".join(args)
+    prompt_args = [arg for arg in args if arg not in ["--verbose", "--v"]]
+    user_prompts = " ".join(prompt_args)
     model_name = "gemini-2.0-flash-001"
     api_key = os.environ.get("GEMINI_API_KEY")
     client = genai.Client(api_key=api_key)
@@ -177,6 +178,7 @@ def main():
         print(f"User prompt: {user_prompts}")
         print(f"Prompt tokens: {prompt_tokens_used}")
         print(f"Response tokens: {response_tokens_used}")
+        # print(f"Function calls detected: {len(response.function_calls) if response.function_calls else 0}")
         print()
 
     # Function Calls
