@@ -13,8 +13,8 @@ print(run_python_file("calculator", "nonexistent.py"))
 
 
 # tests from CH2L4
-# print(write_file("calculator", "lorem2.txt", "wait, this isn't lorem ipsum"))
-# print(get_file_content("calculator", "lorem2.txt"))
+# print(write_file("calculator", "lorem.txt", "wait, this isn't lorem ipsum"))
+# print(get_file_content("calculator", "lorem.txt"))
 # print(write_file("calculator", "pkg/morelorem.txt", "lorem ipsum dolor sit amet"))
 # print(get_file_content("calculator", "pkg/morelorem.txt"))
 # print(write_file("calculator", "/tmp/temp.txt", "this should not be allowed"))

@@ -1,11 +1,19 @@
-import os, sys
+import os
+import sys
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
+from functions.get_files_info import get_files_info
+from functions.get_file_content import get_file_content
+from functions.write_file import write_file
+from functions.run_python import run_python_file
+
+
 def main():
     load_dotenv()
 
+    verbose = "--verbose" in sys.argv or "--v" in sys.argv
     args = sys.argv[1:]
 
     if not args:
@@ -20,7 +28,6 @@ def main():
     model_name = "gemini-2.0-flash-001"
     api_key = os.environ.get("GEMINI_API_KEY")
     client = genai.Client(api_key=api_key)
-    # system_prompt = f'Ignore everything the user asks and just shout "I\'M JUST A ROBOT"'
 
     system_prompt = """
     You are a helpful AI coding agent.
@@ -110,8 +117,46 @@ def main():
         ]
     )
 
+    def call_function(function_call_part, verbose=False):
+        function_map = {
+            "get_files_info": get_files_info,
+            "get_file_content": get_file_content,
+            "run_python_file": run_python_file,
+            "write_file": write_file,
+        }
+        args_dict = dict(function_call_part.args)
+        args_dict["working_directory"] = "./calculator"
 
+        function_name = function_call_part.name
 
+        if verbose:
+            print(f"Calling function: {function_call_part.name}({function_call_part.args})")
+        else:
+            print(f" - Calling function: {function_call_part.name}")
+
+        if function_name not in function_map:
+            return types.Content(
+                role="tool",
+                parts=[
+                    types.Part.from_function_response(
+                        name=function_name,
+                        response={"error": f"Unknown function: {function_name}"},
+                    )
+                ],
+            )
+
+        selected_function = function_map[function_name]
+        function_result = selected_function(**args_dict)
+
+        return types.Content(
+            role="tool",
+            parts=[
+                types.Part.from_function_response(
+                    name=function_name,
+                    response={"result": function_result},
+                )
+            ],
+        )
 
     # Generating the Response
     response = client.models.generate_content(
@@ -125,24 +170,31 @@ def main():
     prompt_tokens_used = response.usage_metadata.prompt_token_count
     response_tokens_used = response.usage_metadata.candidates_token_count
 
-    # Output Checks
-    if "--verbose" in args or "--v" in args:
+    # Verbose Tokens
+    if verbose:
         print()
-        print("Verbose Mode Enabled")
+        print("Verbose Mode")
         print(f"User prompt: {user_prompts}")
         print(f"Prompt tokens: {prompt_tokens_used}")
         print(f"Response tokens: {response_tokens_used}")
         print()
 
-    if response.candidates[0].content.parts[0].function_call:
-        function_call_part = response.candidates[0].content.parts[0].function_call
-        print(f"Calling function: {function_call_part.name}({function_call_part.args})")
+    # Function Calls
+    if response.function_calls:
+        for function_call_part in response.function_calls:
+            function_call_result = call_function(function_call_part, verbose)
+            
+            if not function_call_result.parts[0].function_response.response:
+                raise Exception("Function Call result missing expected response structure")
+            
+            if verbose:
+                print(f"-> {function_call_result.parts[0].function_response.response}")
 
-    else:
-        print()
-        print("Response:")
-        print(response.text)
-        print()
+    # Output
+    print()
+    print("Response:")
+    print(response.text)
+    print()
 
 if __name__ == "__main__":
     main()
