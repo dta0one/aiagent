@@ -167,7 +167,6 @@ def main():
     # Main Loop Logic
     break_counter = 0
     while True:
-
         # Generating the Response
         response = client.models.generate_content(
             model=model_name,
@@ -177,36 +176,33 @@ def main():
             )
         )
 
+        # Add the model's response to messages
         for candidate in response.candidates:
             messages.append(candidate.content)
             if verbose:
-                print()
                 print(f"\nModel ({candidate.content.role}): {candidate.content.parts[0].text}")
 
-        # Function Calls
+        # Check if there are function calls to process
+        function_calls_made = False
         if response.function_calls:
+            function_calls_made = True
             for function_call_part in response.function_calls:
                 function_call_result = call_function(function_call_part, verbose)
                 messages.append(function_call_result)
 
-                if not function_call_result.parts[0].function_response.response:
-                    raise Exception("Function Call result missing expected response structure")
-                
                 if verbose:
                     for part in function_call_result.parts:
-                        print()
                         print(f"-> {part.function_response.response}")
 
-        else:
+        # If no function calls were made, we're done
+        if not function_calls_made:
             if verbose:
-                print()
                 print("No more function calls")
             break
 
         break_counter += 1
         if break_counter >= LOOP_LIMIT:
             if verbose:
-                print()
                 print("Exceeded break_counter limit")
             break
 
