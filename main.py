@@ -159,42 +159,67 @@ def main():
             ],
         )
 
-    # Generating the Response
-    response = client.models.generate_content(
-        model=model_name,
-        contents=messages,
-        config=types.GenerateContentConfig(
-            tools=[available_functions], system_instruction=system_prompt
-        )
-    )
+    # Main Loop Logic
+    break_counter = 0
+    while True:
 
+        # Generating the Response
+        response = client.models.generate_content(
+            model=model_name,
+            contents=messages,
+            config=types.GenerateContentConfig(
+                tools=[available_functions], system_instruction=system_prompt
+            )
+        )
+
+        for candidate in response.candidates:
+            messages.append(candidate.content)
+            if verbose:
+                print()
+                print(f"\nModel ({candidate.content.role}): {candidate.content.parts[0].text}")
+
+        # Function Calls
+        if response.function_calls:
+            for function_call_part in response.function_calls:
+                function_call_result = call_function(function_call_part, verbose)
+                messages.append(function_call_result)
+
+                if not function_call_result.parts[0].function_response.response:
+                    raise Exception("Function Call result missing expected response structure")
+                
+                if verbose:
+                    for part in function_call_result.parts:
+                        print()
+                        print(f"-> {part.function_response.response}")
+
+        else:
+            if verbose:
+                print()
+                print("No more function calls")
+            break
+
+        break_counter += 1
+        if break_counter >= 20:
+            if verbose:
+                print()
+                print("Exceeded break_counter limit")
+            break
+
+
+    # Verbose Tokens
     prompt_tokens_used = response.usage_metadata.prompt_token_count
     response_tokens_used = response.usage_metadata.candidates_token_count
 
-    # Verbose Tokens
     if verbose:
         print()
         print("Verbose Mode")
         print(f"User prompt: {user_prompts}")
         print(f"Prompt tokens: {prompt_tokens_used}")
         print(f"Response tokens: {response_tokens_used}")
-        # print(f"Function calls detected: {len(response.function_calls) if response.function_calls else 0}")
-        print()
-
-    # Function Calls
-    if response.function_calls:
-        for function_call_part in response.function_calls:
-            function_call_result = call_function(function_call_part, verbose)
-            
-            if not function_call_result.parts[0].function_response.response:
-                raise Exception("Function Call result missing expected response structure")
-            
-            if verbose:
-                print(f"-> {function_call_result.parts[0].function_response.response}")
 
     # Output
     print()
-    print("Response:")
+    print("Final Response:")
     print(response.text)
     print()
 
