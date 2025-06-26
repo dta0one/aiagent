@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
+from config import MAX_CHARS, WORKING_DIR, LOOP_LIMIT
 from functions.get_files_info import get_files_info
 from functions.get_file_content import get_file_content
 from functions.write_file import write_file
@@ -40,7 +41,11 @@ def main():
     - Execute Python files with optional arguments
     - Write or overwrite files
 
+    You should use the available functions to explore files and answer questions. Do not ask the user for file names—use your tools to find out!
+
     All paths you provide should be relative to the working directory. You do not need to specify the working directory in your function calls as it is automatically injected for security reasons.
+    
+    
     """
 
     messages = [
@@ -126,7 +131,7 @@ def main():
             "write_file": write_file,
         }
         args_dict = dict(function_call_part.args)
-        args_dict["working_directory"] = "./calculator"
+        args_dict["working_directory"] = WORKING_DIR
 
         function_name = function_call_part.name
 
@@ -199,7 +204,7 @@ def main():
             break
 
         break_counter += 1
-        if break_counter >= 20:
+        if break_counter >= LOOP_LIMIT:
             if verbose:
                 print()
                 print("Exceeded break_counter limit")

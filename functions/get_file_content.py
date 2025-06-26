@@ -1,8 +1,9 @@
 import os
+from config import MAX_CHARS
 
 def get_file_content(working_directory, file_path):
 
-    max_size = 10000
+    max_size = MAX_CHARS
 
     abs_working_directory = os.path.abspath(working_directory)
     tar_file_path = os.path.abspath(os.path.join(working_directory, file_path))
